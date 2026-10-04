@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shift Calendar</title>
+<style>
+:root{--navy:#172b4d;--bg:#f4f6f8;--card:#fff;--text:#182230;--muted:#718096;--morning:#ffe29a;--night:#f4a7a7;--off:#bfe7c8;--today:#dbe8ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text)}
+.app{max-width:620px;margin:auto;padding:14px}
+header{background:var(--navy);color:white;border-radius:18px;padding:18px 18px 16px;box-shadow:0 5px 18px #0001}
+.top{display:flex;justify-content:space-between;align-items:center}.title{font-size:24px;font-weight:750}.subtitle{margin-top:4px;font-size:14px;opacity:.8}
+.nav{display:flex;align-items:center;justify-content:space-between;margin:14px 2px}.nav button{border:0;background:white;border-radius:12px;width:44px;height:40px;font-size:22px;box-shadow:0 2px 8px #0001;cursor:pointer}.month{font-size:21px;font-weight:750}
+.calendar{background:var(--card);border-radius:18px;padding:10px;box-shadow:0 3px 14px #0001}
+.week,.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.week div{text-align:center;color:var(--muted);font-size:12px;font-weight:700;padding:7px 0}
+.day{min-height:76px;border-radius:10px;padding:6px;background:#f8fafb;position:relative}.day .num{font-size:12px;color:#64748b}.day .shift{margin-top:8px;text-align:center;border-radius:7px;padding:5px 2px;font-size:12px;font-weight:750}
+.other{opacity:.28}.morning{background:var(--morning)}.night{background:var(--night)}.off{background:var(--off)}
+.today{outline:2px solid #6b8fd6;background:var(--today)}
+.legend{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;padding:14px 4px 4px;color:#475569;font-size:12px}.dot{display:inline-block;width:11px;height:11px;border-radius:4px;vertical-align:-1px;margin-right:4px}
+@media(max-width:420px){.app{padding:8px}.day{min-height:68px}.title{font-size:21px}.month{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="top"><div class="title">Shift Calendar</div><div>📅</div></div>
+  </header>
+<div class="nav">
+  <button id="prev">‹</button><div class="month" id="month"></div><button id="next">›</button>
+</div>
+<div class="calendar">
+  <div class="week" id="week"></div>
+  <div class="grid" id="grid"></div>
+  <div class="legend">
+    <span><i class="dot morning"></i>M</span>
+    <span><i class="dot night"></i>N</span>
+    <span><i class="dot off"></i>O</span>
+  </div>
+</div>
+</div>
+<script>
+const weekNames=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const monthNames=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const cycle=["Morning","Morning","Night","Night","Off","Off","Off","Off","Off","Off"];
+const base=new Date(2026,9,4); // 4 Oct 2026 = second Night shift
+let view=new Date(2026,9,1);
+
+function diffDays(a,b){return Math.floor((Date.UTC(a.getFullYear(),a.getMonth(),a.getDate())-Date.UTC(b.getFullYear(),b.getMonth(),b.getDate()))/86400000)}
+function shiftFor(d){
+  let index=(diffDays(d,base)+3)%10; // base is cycle index 3 (second Night)
+  return cycle[index];
+}
+function render(){
+  document.getElementById("month").textContent=monthNames[view.getMonth()]+" "+view.getFullYear();
+  document.getElementById("week").innerHTML=weekNames.map(x=>"<div>"+x+"</div>").join("");
+  const first=new Date(view.getFullYear(),view.getMonth(),1);
+  const mondayIndex=(first.getDay()+6)%7;
+  const days=new Date(view.getFullYear(),view.getMonth()+1,0).getDate();
+  const prevDays=new Date(view.getFullYear(),view.getMonth(),0).getDate();
+  let cells=[];
+  for(let i=0;i<42;i++){
+    let n=i-mondayIndex+1, d;
+    let other=false;
+    if(n<1){d=new Date(view.getFullYear(),view.getMonth()-1,prevDays+n);other=true}
+    else if(n>days){d=new Date(view.getFullYear(),view.getMonth()+1,n-days);other=true}
+    else d=new Date(view.getFullYear(),view.getMonth(),n);
+    const s=shiftFor(d);
+    const short=s==="Morning"?"M":s==="Night"?"N":"O";
+    const cls=s==="Morning"?"morning":s==="Night"?"night":"off";
+    const today=new Date(); const isToday=d.toDateString()===today.toDateString();
+    cells.push(`<div class="day ${other?"other ":""}${isToday?"today":""}">
+      <div class="num">${d.getDate()}</div><div class="shift ${cls}">${short}</div>
+    </div>`);
+  }
+  document.getElementById("grid").innerHTML=cells.join("");
+}
+document.getElementById("prev").onclick=()=>{view.setMonth(view.getMonth()-1);render()};
+document.getElementById("next").onclick=()=>{view.setMonth(view.getMonth()+1);render()};
+render();
+</script>
+</body>
+</html>
